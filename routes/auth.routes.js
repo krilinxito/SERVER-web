@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
+const { verificarToken } = require('../middlewares/auth.middleware'); // Asegúrate de importar el middleware
 
-const { register, login } = require('../controllers/auth.controller');
-const { verificarToken, soloAdmin } = require('../middlewares/auth.middleware');
+// Añade esta nueva ruta
+router.post('/verify-token', verificarToken, (req, res) => {
+  res.json({ 
+    user: req.user // El middleware verificarToken debe adjuntar el usuario decodificado
+  });
+});
 
-// Registro y login
+// Rutas existentes
 router.post('/register', register);
 router.post('/login', login);
-
-// Ruta solo para admins
 router.get('/admin', verificarToken, soloAdmin, (req, res) => {
   res.json({ message: `Bienvenido, admin ${req.user.email}` });
 });
