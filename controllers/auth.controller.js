@@ -61,7 +61,13 @@ async function register(req, res) {
 }
 
 async function login(req, res) {
-  const { email, password } = req.body;
+  const { email, password, captchaToken } = req.body;
+
+  // Verificar CAPTCHA
+  const captchaValido = await verificarCaptcha(captchaToken);
+  if (!captchaValido) {
+    return res.status(400).json({ error: 'CAPTCHA inválido' });
+  }
 
   const user = await getUserByEmail(email);
   if (!user) {
@@ -81,6 +87,7 @@ async function login(req, res) {
 
   res.json({ message: 'Login exitoso', token });
 }
+
 
 
 module.exports = { register, login };
