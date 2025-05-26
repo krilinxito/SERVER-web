@@ -79,11 +79,21 @@ async function login(req, res) {
     return res.status(401).json({ error: 'Credenciales incorrectas' });
   }
 
-  const token = jwt.sign(
-    { id: user.id, email: user.email, rol: user.rol }, 
+   const token = jwt.sign(
+    { 
+      id: user.id, 
+      email: user.email, 
+      rol: user.rol 
+    }, 
     JWT_SECRET,
     { expiresIn: '1h' }
   );
+
+  // Asegurar que la respuesta incluya el token correctamente
+  res.json({ 
+    message: 'Login exitoso', 
+    token: token  // ← Clave "token" en la respuesta
+  });
 
   res.json({ message: 'Login exitoso', token });
 }

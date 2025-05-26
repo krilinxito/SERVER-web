@@ -7,11 +7,11 @@ const { verificarToken, soloAdmin } = require('../middlewares/auth.middleware');
 
 // Asegura que esta ruta exista y devuelva la estructura correcta
 router.post('/verify-token', verificarToken, (req, res) => {
+  // Devuelve los datos del usuario decodificados
   res.json({ 
     user: {
       id: req.user.id,
       email: req.user.email,
-      nombre: req.user.nombre,
       rol: req.user.rol
     }
   });
