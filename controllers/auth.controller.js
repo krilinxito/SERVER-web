@@ -82,8 +82,5 @@ async function login(req, res) {
   res.json({ message: 'Login exitoso', token });
 }
 
-function zonaAdmin(req, res) {
-  res.json({ message: `Bienvenido, admin ${req.user.email}` });
-}
 
-module.exports = { register, login, zonaAdmin };
+module.exports = { register, login };
