@@ -10,9 +10,13 @@ const pagosRoutes = require('./routes/pagos.routes');
 const cajaRoutes = require('./routes/caja.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const cors = require('cors');
+const corsOptions = {
+  origin: ['http://localhost:5173'], // aquí puedes agregar otros orígenes válidos si los necesitas
+  credentials: true, // opcional, si usas cookies
+};
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
 app.use('/', indexRoutes);
 app.use('/auth', authRoutes);
 app.use('/productos', productRoutes);
