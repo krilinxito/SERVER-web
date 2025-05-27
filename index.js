@@ -15,11 +15,13 @@ const corsOptions = {
   credentials: true, // opcional, si usas cookies
 };
 const app = express();
-app.use(express.json());
 app.use(cors({
-  origin: '*', // Permite cualquier origen (temporalmente)
+  origin: true, // Respeta el origen de la solicitud
+  credentials: true, // Permite cookies/autenticación
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-
+app.use(express.json());
 app.use('/', indexRoutes);
 app.use('/auth', authRoutes);
 app.use('/productos', productRoutes);
