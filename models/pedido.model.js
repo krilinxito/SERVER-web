@@ -1,13 +1,13 @@
 const pool = require('../config/db');
 
 // Crear pedido
-const crearPedido = async (nombre, precio) => {
+const crearPedido = async (nombre, id_usuario) => {
   try {
     const [result] = await pool.execute(
-      'INSERT INTO pedidos (nombre) VALUES (?)',
-      [nombre]
+      'INSERT INTO pedidos (nombre, id_usuario) VALUES (?, ?)',
+      [nombre, id_usuario]
     );
-    return { id: result.insertId, nombre };
+    return { id: result.insertId, nombre, id_usuario };
   } catch (error) {
     throw error;
   }

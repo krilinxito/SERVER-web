@@ -10,14 +10,14 @@ const {
 
 // POST /api/pedidos
 const crearPedidoController = async (req, res) => {
-  const { nombre } = req.body;
+  const { nombre, id_usuario } = req.body;
 
-  if (!nombre) {
-    return res.status(400).json({ error: 'Nombre es requerido' });
+  if (!nombre || !id_usuario) {
+    return res.status(400).json({ error: 'Nombre e ID de usuario son requeridos' });
   }
 
   try {
-    const pedido = await crearPedido(nombre);
+    const pedido = await crearPedido(nombre, id_usuario);
     res.status(201).json({ message: 'Pedido creado', pedido });
   } catch (error) {
     console.error(error);
