@@ -4,7 +4,8 @@ const {
   obtenerTodosLosPedidos,
   obtenerPedidoPorId,
   actualizarPedido,
-  eliminarPedido
+  eliminarPedido,
+  obtenerLosPedidosPorDia
 } = require('../models/pedido.model.js');
 
 // POST /api/pedidos
