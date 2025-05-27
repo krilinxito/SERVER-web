@@ -26,11 +26,19 @@ const obtenerTodosLosPedidos = async () => {
 const obtenerLosPedidosPorDia = async () => {
   try {
     const [rows] = await pool.execute('SELECT * FROM pedidos WHERE DATE(fecha) = CURDATE()');
+    
+    // Validación: si no hay pedidos, retornar un array vacío
+    if (rows.length === 0) {
+      console.log('No hay pedidos registrados para el día de hoy.');
+      return [];
+    }
+
     return rows;
   } catch (error) {
     throw error;
   }
 };
+
 
 // Obtener pedido por ID
 const obtenerPedidoPorId = async (id) => {
