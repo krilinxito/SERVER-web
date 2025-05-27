@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
+const pool = require('./db'); // importa tu pool de conexión
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Middleware para verificar token
-function verificarToken(req, res, next) {
+async function verificarToken(req, res, next) {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -12,8 +12,17 @@ function verificarToken(req, res, next) {
   const token = authHeader.split(' ')[1];
   
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Consulta el usuario en la base de datos
+    const [rows] = await pool.query('SELECT id, nombre, email, rol FROM usuarios WHERE id = ?', [decoded.id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    
+    // Asignar usuario completo a req.user
+    req.user = rows[0];
     next();
   } catch (error) {
     console.error('Error verificando token:', error);
@@ -21,7 +30,6 @@ function verificarToken(req, res, next) {
   }
 }
 
-// Middleware para verificar si el usuario es admin
 function soloAdmin(req, res, next) {
   if (req.user.rol !== 'admin') {
     return res.status(403).json({ error: 'Acceso denegado: solo administradores' });
