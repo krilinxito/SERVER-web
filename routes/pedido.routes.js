@@ -10,23 +10,14 @@ const {
   obtenerLosPedidosPorDiaController
 } = require('../controllers/pedido.controller.js');
 
-// Rutas CRUD para pedidos
-
-// GET /api/pedidos - Obtener todos los pedidos
-router.get('/', obtenerTodosLosPedidosController);
-
-// GET /api/pedidos/:id - Obtener un pedido por ID
-router.get('/:id', obtenerPedidoPorIdController);
-
-// POST /api/pedidos - Crear un nuevo pedido
-router.post('/', crearPedidoController);
-
-// PUT /api/pedidos/:id - Actualizar un pedido completo
-router.put('/:id', actualizarPedidoController);
-
-// DELETE /api/pedidos/:id - Eliminar un pedido
-router.delete('/:id', eliminarPedidoController);
-
+// GET pedidos del día (más específica → primero)
 router.get('/pedidos-dia', obtenerLosPedidosPorDiaController);
+
+// Rutas CRUD
+router.get('/', obtenerTodosLosPedidosController);
+router.get('/:id', obtenerPedidoPorIdController);
+router.post('/', crearPedidoController);
+router.put('/:id', actualizarPedidoController);
+router.delete('/:id', eliminarPedidoController);
 
 module.exports = router;
