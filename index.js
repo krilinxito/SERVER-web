@@ -16,7 +16,10 @@ const corsOptions = {
 };
 const app = express();
 app.use(express.json());
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: '*', // Permite cualquier origen (temporalmente)
+}));
+
 app.use('/', indexRoutes);
 app.use('/auth', authRoutes);
 app.use('/productos', productRoutes);
