@@ -31,7 +31,13 @@ const anularProductoDePedido = async (id_contiene) => {
 const obtenerProductosDePedido = async (id_pedido) => {
   try {
     const [rows] = await pool.execute(
-      `SELECT c.id, p.nombre, p.precio, c.cantidad
+      `SELECT 
+        c.id,
+        c.id_producto,
+        c.cantidad,
+        c.anulado,
+        p.nombre,
+        p.precio
        FROM contiene c
        JOIN productos p ON c.id_producto = p.id
        WHERE c.id_pedido = ? AND c.anulado = FALSE`,

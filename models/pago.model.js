@@ -1,18 +1,25 @@
 const pool = require('../config/db');
 
+// Función auxiliar para manejar números de forma segura
+const safeNumber = (value) => {
+  const num = Number(value || 0);
+  return isNaN(num) ? 0 : num;
+};
+
 // Agregar un pago a un pedido
 const agregarPago = async (id_pedido, monto, metodo) => {
   try {
+    const montoNum = safeNumber(monto);
     const [result] = await pool.execute(
       `INSERT INTO pagos (id_pedido, monto, metodo)
        VALUES (?, ?, ?)`,
-      [id_pedido, monto, metodo]
+      [id_pedido, montoNum, metodo]
     );
 
     // Después de insertar el pago, verificar si ya está completo
     await verificarYActualizarEstadoPedido(id_pedido);
 
-    return { id: result.insertId, id_pedido, monto, metodo };
+    return { id: result.insertId, id_pedido, monto: montoNum, metodo };
   } catch (error) {
     throw error;
   }
@@ -22,10 +29,16 @@ const agregarPago = async (id_pedido, monto, metodo) => {
 const obtenerPagosDePedido = async (id_pedido) => {
   try {
     const [rows] = await pool.execute(
-      `SELECT * FROM pagos WHERE id_pedido = ?`,
+      `SELECT id, id_pedido, monto, metodo, hora 
+       FROM pagos 
+       WHERE id_pedido = ?
+       ORDER BY hora ASC`,
       [id_pedido]
     );
-    return rows;
+    return rows.map(row => ({
+      ...row,
+      monto: safeNumber(row.monto)
+    }));
   } catch (error) {
     throw error;
   }
@@ -35,10 +48,12 @@ const obtenerPagosDePedido = async (id_pedido) => {
 const calcularTotalPagado = async (id_pedido) => {
   try {
     const [rows] = await pool.execute(
-      `SELECT SUM(monto) AS total_pagado FROM pagos WHERE id_pedido = ?`,
+      `SELECT COALESCE(SUM(monto), 0) AS total_pagado 
+       FROM pagos 
+       WHERE id_pedido = ?`,
       [id_pedido]
     );
-    return rows[0].total_pagado || 0;
+    return safeNumber(rows[0].total_pagado);
   } catch (error) {
     throw error;
   }
@@ -48,13 +63,13 @@ const calcularTotalPagado = async (id_pedido) => {
 const calcularTotalPedido = async (id_pedido) => {
   try {
     const [rows] = await pool.execute(
-      `SELECT SUM(p.precio * c.cantidad) AS total
+      `SELECT COALESCE(SUM(p.precio * c.cantidad), 0) AS total
        FROM contiene c
        JOIN productos p ON c.id_producto = p.id
        WHERE c.id_pedido = ? AND c.anulado = FALSE`,
       [id_pedido]
     );
-    return rows[0].total || 0;
+    return safeNumber(rows[0].total);
   } catch (error) {
     throw error;
   }
