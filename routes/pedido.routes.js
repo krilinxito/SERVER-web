@@ -6,7 +6,8 @@ const {
   obtenerTodosLosPedidosController,
   obtenerPedidoPorIdController,
   actualizarPedidoController,
-  eliminarPedidoController
+  eliminarPedidoController,
+  obtenerLosPedidosPorDiaController
 } = require('../controllers/pedido.controller.js');
 
 // Rutas CRUD para pedidos
@@ -25,5 +26,7 @@ router.put('/:id', actualizarPedidoController);
 
 // DELETE /api/pedidos/:id - Eliminar un pedido
 router.delete('/:id', eliminarPedidoController);
+
+router.get('/pedidos-dia', obtenerLosPedidosPorDiaController);
 
 module.exports = router;

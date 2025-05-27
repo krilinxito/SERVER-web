@@ -23,6 +23,15 @@ const obtenerTodosLosPedidos = async () => {
   }
 };
 
+const obtenerLosPedidosPorDia = async () => {
+  try {
+    const [rows] = await pool.execute('SELECT * FROM pedidos WHERE DATE(fecha) = CURDATE()');
+    return rows;
+  } catch (error) {
+    throw error;
+  }
+};
+
 // Obtener pedido por ID
 const obtenerPedidoPorId = async (id) => {
   try {
@@ -64,5 +73,6 @@ module.exports = {
   obtenerTodosLosPedidos,
   obtenerPedidoPorId,
   actualizarPedido,
-  eliminarPedido    
+  eliminarPedido, 
+  obtenerLosPedidosPorDia   
 };

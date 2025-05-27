@@ -34,6 +34,15 @@ const obtenerTodosLosPedidosController = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener los pedidos' });
   }
 };
+const obtenerLosPedidosPorDiaController = async (req, res) => {
+  try {
+    const pedidos = await obtenerLosPedidosPorDia();
+    res.json(pedidos);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener los pedidos del día' });
+  }
+};
 
 // GET /api/pedidos/:id
 const obtenerPedidoPorIdController = async (req, res) => {
@@ -97,5 +106,6 @@ module.exports = {
   obtenerTodosLosPedidosController,
   obtenerPedidoPorIdController,
   actualizarPedidoController,
-  eliminarPedidoController
+  eliminarPedidoController,
+  obtenerLosPedidosPorDiaController
 };
