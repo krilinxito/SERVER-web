@@ -17,8 +17,16 @@ router.post('/register', register); // ← Ahora register está definido
 router.post('/login', login);       // ← login también estará definido
 
 // Ruta de admin
+// Modifica la ruta para incluir datos relevantes
 router.get('/admin', verificarToken, soloAdmin, (req, res) => {
-  res.json({ message: `Bienvenido, admin ${req.user.email}` });
+  res.json({
+    message: `Bienvenido admin ${req.user.email}`,
+    adminData: {
+      nombre: req.user.nombre,
+      email: req.user.email,
+      rol: req.user.rol,
+    }
+  });
 });
 
 module.exports = router;
