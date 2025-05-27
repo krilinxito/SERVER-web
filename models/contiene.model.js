@@ -1,5 +1,11 @@
 const pool = require('../config/db');
 
+// Función auxiliar para manejar números
+const safeNumber = (value) => {
+  const num = Number(value || 0);
+  return isNaN(num) ? 0 : num;
+};
+
 // Agregar producto a un pedido
 const agregarProductoAPedido = async (id_pedido, id_producto, cantidad = 1) => {
   try {
@@ -37,13 +43,28 @@ const obtenerProductosDePedido = async (id_pedido) => {
         c.cantidad,
         c.anulado,
         p.nombre,
-        p.precio
+        p.precio,
+        (p.precio * c.cantidad) as subtotal
        FROM contiene c
        JOIN productos p ON c.id_producto = p.id
        WHERE c.id_pedido = ? AND c.anulado = FALSE`,
       [id_pedido]
     );
-    return rows;
+
+    // Calcular el total del pedido
+    const total = rows.reduce((sum, row) => {
+      return sum + safeNumber(row.subtotal);
+    }, 0);
+
+    return {
+      productos: rows.map(row => ({
+        ...row,
+        precio: safeNumber(row.precio),
+        cantidad: safeNumber(row.cantidad),
+        subtotal: safeNumber(row.subtotal)
+      })),
+      total: total
+    };
   } catch (error) {
     throw error;
   }
