@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const pool = require('./db'); // importa tu pool de conexión
+const pool = require('../config/db'); 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 async function verificarToken(req, res, next) {
