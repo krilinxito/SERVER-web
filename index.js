@@ -8,7 +8,7 @@ const pedidosRoutes = require('./routes/pedido.routes');
 const contieneRoutes = require('./routes/contiene.routes');
 const pagosRoutes = require('./routes/pagos.routes');
 const cajaRoutes = require('./routes/caja.routes');
-const dashboardRoutes = require('./routes/dashboard.routes');
+const estadisticasRoutes = require('./routes/estadisticas.routes');
 const arqueoRoutes = require('./routes/arqueo.routes');
 const cors = require('cors');
 const corsOptions = {
@@ -29,7 +29,7 @@ app.use('/productos', productRoutes);
 app.use('/pedidos', pedidosRoutes);
 app.use('/contiene', contieneRoutes);
 app.use('/pagos', pagosRoutes);
-app.use('/dashboard', dashboardRoutes);
+app.use('/estadisticas', estadisticasRoutes);
 app.use('/caja', cajaRoutes);
 app.use('/arqueos', arqueoRoutes);
 async function testDbConnection() {
