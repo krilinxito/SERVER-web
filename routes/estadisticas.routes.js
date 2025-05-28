@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken, isAdmin } = require('../middleware/auth.middleware'); // Asegúrate de que el middleware esté correctamente importado
+const { verifyToken, isAdmin } = require('../middlewares/auth.middleware'); // Asegúrate de que el middleware esté correctamente importado
 const estadisticasController = require('../controllers/estadisticasController');
 
 // Middleware para proteger todas las rutas de estadísticas
