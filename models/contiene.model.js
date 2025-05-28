@@ -47,7 +47,7 @@ const obtenerProductosDePedido = async (id_pedido) => {
         (p.precio * c.cantidad) as subtotal
        FROM contiene c
        JOIN productos p ON c.id_producto = p.id
-       WHERE c.id_pedido = ? AND c.anulado = FALSE`,
+       WHERE c.id_pedido = ? `,
       [id_pedido]
     );
 
