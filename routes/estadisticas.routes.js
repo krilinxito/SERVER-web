@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken, isAdmin } = require('../middlewares/auth.middleware'); // Asegúrate de que el middleware esté correctamente importado
-const estadisticasController = require('../controllers/estadisticasController');
+const estadisticasController = require('../controllers/estadisticas.controller'); // Asegúrate de que el controlador esté correctamente importado
 
 // Middleware para proteger todas las rutas de estadísticas
 router.use(verifyToken);
