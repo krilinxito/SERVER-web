@@ -167,11 +167,10 @@ const getComparativaSemanal = async () => {
 // Obtener ingresos históricos paginados
 // ... existing code ...
 
-// Obtener ingresos históricos paginados
 const getIngresosHistoricos = async (pagina, limite) => {
   try {
     const offset = (pagina - 1) * limite;
-    const [rows] = await pool.execute(`
+    const [rows] = await pool.query(`
       SELECT 
         DATE(pedidos.fecha) AS fecha,
         COALESCE(SUM(pagos.monto), 0) AS total,
@@ -181,7 +180,7 @@ const getIngresosHistoricos = async (pagina, limite) => {
       GROUP BY DATE(pedidos.fecha)
       ORDER BY fecha DESC
       LIMIT ? OFFSET ?
-    `, [Number(limite), Number(offset)]);
+    `, [limite, offset]);
     return rows;
   } catch (error) {
     console.error('Error en getIngresosHistoricos:', error);
@@ -192,11 +191,9 @@ const getIngresosHistoricos = async (pagina, limite) => {
 // Obtener total de registros de ingresos históricos
 const getTotalIngresosHistoricos = async () => {
   try {
-    const [rows] = await pool.execute(`
-      SELECT COUNT(*) as total FROM (
-        SELECT DISTINCT DATE(fecha) as fecha
-        FROM pedidos
-      ) as fechas_unicas
+    const [rows] = await pool.query(`
+      SELECT COUNT(DISTINCT DATE(fecha)) as total
+      FROM pedidos
     `);
     return rows[0].total;
   } catch (error) {
@@ -204,6 +201,7 @@ const getTotalIngresosHistoricos = async () => {
     throw error;
   }
 };
+
 
 module.exports = {
   getIngresosSemanales,
@@ -216,3 +214,9 @@ module.exports = {
   getIngresosHistoricos,
   getTotalIngresosHistoricos
 };
+
+// ... existing code ...
+
+// Obtener ingresos históricos paginados
+
+// ... existing code ...
