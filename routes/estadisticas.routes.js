@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken, isAdmin } = require('../middlewares/auth.middleware'); // Asegúrate de que el middleware esté correctamente importado
-const estadisticasController = require('../controllers/estadisticas.controller'); // Asegúrate de que el controlador esté correctamente importado
+const { verificarToken, soloAdmin } = require('../middleware/auth.middleware');
+const estadisticasController = require('../controllers/estadisticas.controller');
 
-// Middleware para proteger todas las rutas de estadísticas
-router.use(verifyToken);
-router.use(isAdmin);
+// Aplicar middleware de autenticación y autorización a todas las rutas
+router.use((req, res, next) => {
+  verificarToken(req, res, () => {
+    soloAdmin(req, res, next);
+  });
+});
 
 // Ruta para obtener todas las estadísticas en una sola llamada
 router.get('/', estadisticasController.getTodasLasEstadisticas);
