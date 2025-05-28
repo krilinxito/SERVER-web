@@ -137,6 +137,33 @@ const getComparativaSemanal = async (req, res) => {
     });
   }
 };
+// ... existing code ...
+
+// Obtener ingresos históricos paginados
+const getIngresosHistoricos = async (req, res) => {
+  try {
+    const pagina = parseInt(req.query.pagina) || 1;
+    const limite = parseInt(req.query.limite) || 10;
+    
+    const [ingresos, total] = await Promise.all([
+      estadisticasModel.getIngresosHistoricos(pagina, limite),
+      estadisticasModel.getTotalIngresosHistoricos()
+    ]);
+
+    res.json({
+      ingresos,
+      total,
+      pagina,
+      limite
+    });
+  } catch (error) {
+    console.error('Error al obtener ingresos históricos:', error);
+    res.status(500).json({ 
+      error: 'Error al obtener los ingresos históricos',
+      details: error.message 
+    });
+  }
+};
 
 module.exports = {
   getTodasLasEstadisticas,
@@ -146,5 +173,6 @@ module.exports = {
   getVentasPorHora,
   getProductosCancelados,
   getRendimientoUsuarios,
-  getComparativaSemanal
+  getComparativaSemanal,
+  getIngresosHistoricos
 };

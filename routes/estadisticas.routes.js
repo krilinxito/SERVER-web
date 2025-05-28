@@ -18,5 +18,10 @@ router.get('/ventas-por-hora', estadisticasController.getVentasPorHora);
 router.get('/productos-cancelados', estadisticasController.getProductosCancelados);
 router.get('/rendimiento-usuarios', estadisticasController.getRendimientoUsuarios);
 router.get('/comparativa-semanal', estadisticasController.getComparativaSemanal);
+// ... existing code ...
+router.get('/ingresos', estadisticasController.getIngresos);
+router.get('/ingresos-por-metodo', estadisticasController.getIngresosPorMetodo);
+router.get('/ingresos-historicos', estadisticasController.getIngresosHistoricos);
+// ... existing code ...
 
 module.exports = router;

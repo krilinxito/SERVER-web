@@ -162,6 +162,43 @@ const getComparativaSemanal = async () => {
     throw error;
   }
 };
+// ... existing code ...
+
+// Obtener ingresos históricos paginados
+const getIngresosHistoricos = async (pagina, limite) => {
+  try {
+    const offset = (pagina - 1) * limite;
+    const [rows] = await pool.execute(`
+      SELECT 
+        DATE(pedidos.fecha) AS fecha,
+        SUM(pagos.monto) AS total,
+        COUNT(DISTINCT pedidos.id) AS total_pedidos
+      FROM pagos
+      JOIN pedidos ON pagos.id_pedido = pedidos.id
+      GROUP BY DATE(pedidos.fecha)
+      ORDER BY fecha DESC
+      LIMIT ? OFFSET ?
+    `, [limite, offset]);
+    return rows;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Obtener total de registros de ingresos históricos
+const getTotalIngresosHistoricos = async () => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT COUNT(DISTINCT DATE(pedidos.fecha)) as total
+      FROM pedidos
+      JOIN pagos ON pagos.id_pedido = pedidos.id
+    `);
+    return rows[0].total;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 module.exports = {
   getIngresosSemanales,
@@ -170,5 +207,7 @@ module.exports = {
   getVentasPorHora,
   getProductosCancelados,
   getRendimientoUsuarios,
-  getComparativaSemanal
+  getComparativaSemanal,
+  getIngresosHistoricos,
+  getTotalIngresosHistoricos
 };
