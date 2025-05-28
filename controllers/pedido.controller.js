@@ -36,15 +36,31 @@ const crearPedidoController = async (req, res) => {
 };
 
 // GET /api/pedidos
+// ... existing code ...
+
 const obtenerTodosLosPedidosController = async (req, res) => {
   try {
-    const pedidos = await obtenerTodosLosPedidos();
-    res.json(pedidos);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const filtros = {
+      fechaInicio: req.query.fechaInicio,
+      fechaFin: req.query.fechaFin,
+      estado: req.query.estado,
+      usuario: req.query.usuario
+    };
+
+    const resultado = await pedidosModel.obtenerTodosLosPedidos(page, limit, filtros);
+    res.json(resultado);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al obtener los pedidos' });
+    console.error('Error al obtener todos los pedidos:', error);
+    res.status(500).json({
+      error: 'Error al obtener los pedidos',
+      details: error.message
+    });
   }
 };
+
+// ... existing code ...
 
 // GET /api/pedidos/pedidos-dia
 const obtenerLosPedidosPorDiaController = async (req, res) => {
