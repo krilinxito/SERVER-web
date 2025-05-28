@@ -50,8 +50,9 @@ const getProductosMasVendidos = async (limite = 10) => {
       JOIN productos p ON c.id_producto = p.id
       JOIN pedidos pd ON c.id_pedido = pd.id
       WHERE pd.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        AND pd.estado = 'pendiente'
+        AND c.anulado = FALSE
       GROUP BY p.id, p.nombre
+      HAVING cantidad_total > 0
       ORDER BY cantidad_total DESC
       LIMIT ?
     `, [limite]);
@@ -72,8 +73,8 @@ const getVentasPorHora = async () => {
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
       WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        AND p.estado = 'pendiente'
       GROUP BY HOUR(p.fecha)
+      HAVING total_pedidos > 0
       ORDER BY hora
     `);
     return rows;
@@ -95,7 +96,7 @@ const getProductosCancelados = async () => {
       JOIN contiene c ON pd.id = c.id_pedido
       JOIN productos p ON c.id_producto = p.id
       WHERE pd.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        AND pd.estado = 'cancelado'
+        AND (pd.estado = 'cancelado' OR c.anulado = TRUE)
       GROUP BY p.id, p.nombre
       ORDER BY veces_cancelado DESC
     `);
@@ -115,10 +116,11 @@ const getRendimientoUsuarios = async () => {
         COALESCE(SUM(pg.monto), 0) as total_ventas,
         COALESCE(SUM(pg.monto) / NULLIF(COUNT(DISTINCT p.id), 0), 0) as promedio_venta
       FROM usuarios u
-      LEFT JOIN pedidos p ON u.id = p.id_usuario AND p.estado = 'pendiente'
+      LEFT JOIN pedidos p ON u.id = p.id_usuario
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
       WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
       GROUP BY u.id, u.nombre
+      HAVING total_pedidos > 0
       ORDER BY total_ventas DESC
     `);
     return rows;
@@ -140,7 +142,6 @@ const getComparativaSemanal = async () => {
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
       WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        AND p.estado = 'pendiente'
     `);
 
     // Semana anterior
@@ -153,7 +154,6 @@ const getComparativaSemanal = async () => {
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
       WHERE p.fecha BETWEEN DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        AND p.estado = 'pendiente'
     `);
 
     return [...semanaActual, ...semanaAnterior];
