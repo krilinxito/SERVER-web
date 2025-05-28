@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { verificarToken, soloAdmin } = require('../middleware/auth.middleware');
+const { verificarToken, soloAdmin } = require('../middlewares/auth.middleware');
 const estadisticasController = require('../controllers/estadisticas.controller');
 
 // Aplicar middleware de autenticación y autorización a todas las rutas
