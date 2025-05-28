@@ -6,7 +6,7 @@ const getIngresosSemanales = async () => {
       SELECT 
         DATE(p.fecha) as fecha,
         COUNT(DISTINCT p.id) as total_pedidos,
-        SUM(pg.monto) as total
+        COALESCE(SUM(pg.monto), 0) as total
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
       WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
@@ -24,12 +24,13 @@ const getIngresosPorMetodo = async () => {
   try {
     const [rows] = await pool.query(`
       SELECT 
-        metodo,
+        pg.metodo,
         COUNT(*) as cantidad,
-        SUM(monto) as total
-      FROM pagos
-      WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-      GROUP BY metodo
+        SUM(pg.monto) as total
+      FROM pagos pg
+      JOIN pedidos p ON pg.id_pedido = p.id
+      WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+      GROUP BY pg.metodo
     `);
     return rows;
   } catch (error) {
@@ -49,7 +50,7 @@ const getProductosMasVendidos = async (limite = 10) => {
       JOIN productos p ON c.id_producto = p.id
       JOIN pedidos pd ON c.id_pedido = pd.id
       WHERE pd.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        AND c.anulado = 0
+        AND pd.estado = 'pendiente'
       GROUP BY p.id, p.nombre
       ORDER BY cantidad_total DESC
       LIMIT ?
@@ -67,10 +68,11 @@ const getVentasPorHora = async () => {
       SELECT 
         HOUR(p.fecha) as hora,
         COUNT(DISTINCT p.id) as total_pedidos,
-        SUM(pg.monto) as total_ventas
+        COALESCE(SUM(pg.monto), 0) as total_ventas
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
       WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        AND p.estado = 'pendiente'
       GROUP BY HOUR(p.fecha)
       ORDER BY hora
     `);
@@ -86,14 +88,14 @@ const getProductosCancelados = async () => {
     const [rows] = await pool.query(`
       SELECT 
         p.nombre,
-        COUNT(*) as veces_cancelado,
+        COUNT(DISTINCT pd.id) as veces_cancelado,
         SUM(c.cantidad) as cantidad_total_cancelada,
         SUM(c.cantidad * p.precio) as valor_perdido
-      FROM contiene c
+      FROM pedidos pd
+      JOIN contiene c ON pd.id = c.id_pedido
       JOIN productos p ON c.id_producto = p.id
-      JOIN pedidos pd ON c.id_pedido = pd.id
       WHERE pd.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        AND c.anulado = 1
+        AND pd.estado = 'cancelado'
       GROUP BY p.id, p.nombre
       ORDER BY veces_cancelado DESC
     `);
@@ -110,10 +112,10 @@ const getRendimientoUsuarios = async () => {
       SELECT 
         u.nombre as nombre_usuario,
         COUNT(DISTINCT p.id) as total_pedidos,
-        SUM(pg.monto) as total_ventas,
-        COALESCE(SUM(pg.monto) / COUNT(DISTINCT p.id), 0) as promedio_venta
+        COALESCE(SUM(pg.monto), 0) as total_ventas,
+        COALESCE(SUM(pg.monto) / NULLIF(COUNT(DISTINCT p.id), 0), 0) as promedio_venta
       FROM usuarios u
-      LEFT JOIN pedidos p ON u.id = p.id_usuario
+      LEFT JOIN pedidos p ON u.id = p.id_usuario AND p.estado = 'pendiente'
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
       WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
       GROUP BY u.id, u.nombre
@@ -133,11 +135,12 @@ const getComparativaSemanal = async () => {
       SELECT 
         'Semana Actual' as periodo,
         COUNT(DISTINCT p.id) as total_pedidos,
-        SUM(pg.monto) as total_ventas,
+        COALESCE(SUM(pg.monto), 0) as total_ventas,
         COUNT(DISTINCT p.id_usuario) as usuarios_activos
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
       WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        AND p.estado = 'pendiente'
     `);
 
     // Semana anterior
@@ -145,11 +148,12 @@ const getComparativaSemanal = async () => {
       SELECT 
         'Semana Anterior' as periodo,
         COUNT(DISTINCT p.id) as total_pedidos,
-        SUM(pg.monto) as total_ventas,
+        COALESCE(SUM(pg.monto), 0) as total_ventas,
         COUNT(DISTINCT p.id_usuario) as usuarios_activos
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
       WHERE p.fecha BETWEEN DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        AND p.estado = 'pendiente'
     `);
 
     return [...semanaActual, ...semanaAnterior];
