@@ -38,6 +38,7 @@ const crearPedidoController = async (req, res) => {
 // GET /api/pedidos
 // ... existing code ...
 
+// ... existing code ...
 const obtenerTodosLosPedidosController = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -49,8 +50,11 @@ const obtenerTodosLosPedidosController = async (req, res) => {
       usuario: req.query.usuario
     };
 
-    const resultado = await pedidosModel.obtenerTodosLosPedidos(page, limit, filtros);
-    res.json(resultado);
+    const resultado = await obtenerTodosLosPedidos(page, limit, filtros);
+    res.json({
+      data: resultado.pedidos,
+      total: resultado.total
+    });
   } catch (error) {
     console.error('Error al obtener todos los pedidos:', error);
     res.status(500).json({
@@ -59,6 +63,7 @@ const obtenerTodosLosPedidosController = async (req, res) => {
     });
   }
 };
+// ... existing code ...
 
 // ... existing code ...
 
