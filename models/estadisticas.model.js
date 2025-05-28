@@ -1,165 +1,160 @@
-
 const pool = require('../config/db');
 
-// Ingresos totales de los últimos 7 días (por día)
 const getIngresosSemanales = async () => {
   try {
-    const [rows] = await pool.execute(`
+    const [rows] = await pool.query(`
       SELECT 
-        DATE(pedidos.fecha) AS fecha,
-        SUM(pagos.monto) AS total,
-        COUNT(DISTINCT pedidos.id) AS total_pedidos
-      FROM pagos
-      JOIN pedidos ON pagos.id_pedido = pedidos.id
-      WHERE pedidos.fecha >= CURDATE() - INTERVAL 7 DAY
-        AND pedidos.estado = 'pendiente'
-      GROUP BY DATE(pedidos.fecha)
-      ORDER BY fecha ASC
+        DATE(p.fecha) as fecha,
+        COUNT(DISTINCT p.id) as total_pedidos,
+        SUM(pg.monto) as total
+      FROM pedidos p
+      LEFT JOIN pagos pg ON p.id = pg.id_pedido
+      WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+      GROUP BY DATE(p.fecha)
+      ORDER BY fecha
     `);
     return rows;
   } catch (error) {
+    console.error('Error en getIngresosSemanales:', error);
     throw error;
   }
 };
 
-// Ingresos por método de pago (últimos 7 días)
 const getIngresosPorMetodo = async () => {
   try {
-    const [rows] = await pool.execute(`
+    const [rows] = await pool.query(`
       SELECT 
-        pagos.metodo,
-        SUM(pagos.monto) AS total,
-        COUNT(*) AS cantidad_transacciones,
-        AVG(pagos.monto) AS promedio_transaccion
+        metodo,
+        COUNT(*) as cantidad,
+        SUM(monto) as total
       FROM pagos
-      JOIN pedidos ON pagos.id_pedido = pedidos.id
-      WHERE pedidos.fecha >= CURDATE() - INTERVAL 7 DAY
-        AND pedidos.estado = 'pendiente'
-      GROUP BY pagos.metodo
-      ORDER BY total DESC
+      WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+      GROUP BY metodo
     `);
     return rows;
   } catch (error) {
+    console.error('Error en getIngresosPorMetodo:', error);
     throw error;
   }
 };
 
-// Productos más vendidos (top 10 en últimos 7 días)
 const getProductosMasVendidos = async (limite = 10) => {
   try {
-    const [rows] = await pool.execute(`
+    const [rows] = await pool.query(`
       SELECT 
-        productos.id,
-        productos.nombre,
-        SUM(contiene.cantidad) AS cantidad_total,
-        COUNT(DISTINCT pedidos.id) AS numero_pedidos,
-        SUM(contiene.cantidad * productos.precio) AS ingresos_total,
-        productos.precio AS precio_actual
-      FROM contiene
-      JOIN productos ON contiene.id_producto = productos.id
-      JOIN pedidos ON contiene.id_pedido = pedidos.id
-      WHERE pedidos.fecha >= CURDATE() - INTERVAL 7 DAY
-        AND pedidos.estado = 'pendiente'
-        AND contiene.anulado = FALSE
-      GROUP BY productos.id
+        p.nombre,
+        SUM(c.cantidad) as cantidad_total,
+        SUM(c.cantidad * p.precio) as ingresos_total
+      FROM contiene c
+      JOIN productos p ON c.id_producto = p.id
+      JOIN pedidos pd ON c.id_pedido = pd.id
+      WHERE pd.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        AND c.anulado = 0
+      GROUP BY p.id, p.nombre
       ORDER BY cantidad_total DESC
       LIMIT ?
     `, [limite]);
     return rows;
   } catch (error) {
+    console.error('Error en getProductosMasVendidos:', error);
     throw error;
   }
 };
 
-// Resumen de ventas por hora del día (últimos 7 días)
 const getVentasPorHora = async () => {
   try {
-    const [rows] = await pool.execute(`
+    const [rows] = await pool.query(`
       SELECT 
-        HOUR(pedidos.fecha) AS hora,
-        COUNT(DISTINCT pedidos.id) AS total_pedidos,
-        SUM(pagos.monto) AS total_ventas
-      FROM pedidos
-      JOIN pagos ON pedidos.id = pagos.id_pedido
-      WHERE pedidos.fecha >= CURDATE() - INTERVAL 7 DAY
-        AND pedidos.estado = 'pendiente'
-      GROUP BY HOUR(pedidos.fecha)
-      ORDER BY hora ASC
+        HOUR(p.fecha) as hora,
+        COUNT(DISTINCT p.id) as total_pedidos,
+        SUM(pg.monto) as total_ventas
+      FROM pedidos p
+      LEFT JOIN pagos pg ON p.id = pg.id_pedido
+      WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+      GROUP BY HOUR(p.fecha)
+      ORDER BY hora
     `);
     return rows;
   } catch (error) {
+    console.error('Error en getVentasPorHora:', error);
     throw error;
   }
 };
 
-// Productos cancelados/anulados (top 5 últimos 7 días)
 const getProductosCancelados = async () => {
   try {
-    const [rows] = await pool.execute(`
+    const [rows] = await pool.query(`
       SELECT 
-        productos.nombre,
-        COUNT(*) AS veces_cancelado,
-        SUM(contiene.cantidad) AS cantidad_total_cancelada,
-        SUM(contiene.cantidad * productos.precio) AS valor_perdido
-      FROM contiene
-      JOIN productos ON contiene.id_producto = productos.id
-      JOIN pedidos ON contiene.id_pedido = pedidos.id
-      WHERE pedidos.fecha >= CURDATE() - INTERVAL 7 DAY
-        AND (pedidos.estado = 'cancelado' OR contiene.anulado = TRUE)
-      GROUP BY productos.id
+        p.nombre,
+        COUNT(*) as veces_cancelado,
+        SUM(c.cantidad) as cantidad_total_cancelada,
+        SUM(c.cantidad * p.precio) as valor_perdido
+      FROM contiene c
+      JOIN productos p ON c.id_producto = p.id
+      JOIN pedidos pd ON c.id_pedido = pd.id
+      WHERE pd.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        AND c.anulado = 1
+      GROUP BY p.id, p.nombre
       ORDER BY veces_cancelado DESC
-      LIMIT 5
     `);
     return rows;
   } catch (error) {
+    console.error('Error en getProductosCancelados:', error);
     throw error;
   }
 };
 
-// Rendimiento por usuario (últimos 7 días)
 const getRendimientoUsuarios = async () => {
   try {
-    const [rows] = await pool.execute(`
+    const [rows] = await pool.query(`
       SELECT 
-        usuarios.nombre AS nombre_usuario,
-        COUNT(DISTINCT pedidos.id) AS total_pedidos,
-        SUM(pagos.monto) AS total_ventas,
-        AVG(pagos.monto) AS promedio_venta,
-        COUNT(DISTINCT CASE WHEN pedidos.estado = 'cancelado' THEN pedidos.id END) AS pedidos_cancelados
-      FROM usuarios
-      LEFT JOIN pedidos ON usuarios.id = pedidos.id_usuario
-      LEFT JOIN pagos ON pedidos.id = pagos.id_pedido
-      WHERE pedidos.fecha >= CURDATE() - INTERVAL 7 DAY
-      GROUP BY usuarios.id
+        u.nombre as nombre_usuario,
+        COUNT(DISTINCT p.id) as total_pedidos,
+        SUM(pg.monto) as total_ventas,
+        COALESCE(SUM(pg.monto) / COUNT(DISTINCT p.id), 0) as promedio_venta
+      FROM usuarios u
+      LEFT JOIN pedidos p ON u.id = p.id_usuario
+      LEFT JOIN pagos pg ON p.id = pg.id_pedido
+      WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+      GROUP BY u.id, u.nombre
       ORDER BY total_ventas DESC
     `);
     return rows;
   } catch (error) {
+    console.error('Error en getRendimientoUsuarios:', error);
     throw error;
   }
 };
 
-// Comparativa con la semana anterior
 const getComparativaSemanal = async () => {
   try {
-    const [rows] = await pool.execute(`
+    // Semana actual
+    const [semanaActual] = await pool.query(`
       SELECT 
-        CASE 
-          WHEN fecha >= CURDATE() - INTERVAL 7 DAY THEN 'Esta semana'
-          ELSE 'Semana anterior'
-        END AS periodo,
-        COUNT(DISTINCT pedidos.id) AS total_pedidos,
-        SUM(pagos.monto) AS total_ventas,
-        COUNT(DISTINCT pedidos.id_usuario) AS usuarios_activos
-      FROM pedidos
-      JOIN pagos ON pedidos.id = pagos.id_pedido
-      WHERE fecha >= CURDATE() - INTERVAL 14 DAY
-        AND pedidos.estado = 'pendiente'
-      GROUP BY periodo
-      ORDER BY periodo DESC
+        'Semana Actual' as periodo,
+        COUNT(DISTINCT p.id) as total_pedidos,
+        SUM(pg.monto) as total_ventas,
+        COUNT(DISTINCT p.id_usuario) as usuarios_activos
+      FROM pedidos p
+      LEFT JOIN pagos pg ON p.id = pg.id_pedido
+      WHERE p.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
     `);
-    return rows;
+
+    // Semana anterior
+    const [semanaAnterior] = await pool.query(`
+      SELECT 
+        'Semana Anterior' as periodo,
+        COUNT(DISTINCT p.id) as total_pedidos,
+        SUM(pg.monto) as total_ventas,
+        COUNT(DISTINCT p.id_usuario) as usuarios_activos
+      FROM pedidos p
+      LEFT JOIN pagos pg ON p.id = pg.id_pedido
+      WHERE p.fecha BETWEEN DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    `);
+
+    return [...semanaActual, ...semanaAnterior];
   } catch (error) {
+    console.error('Error en getComparativaSemanal:', error);
     throw error;
   }
 };

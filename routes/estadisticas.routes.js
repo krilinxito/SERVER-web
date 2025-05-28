@@ -3,12 +3,9 @@ const router = express.Router();
 const { verificarToken, soloAdmin } = require('../middlewares/auth.middleware');
 const estadisticasController = require('../controllers/estadisticas.controller');
 
-// Aplicar middleware de autenticación y autorización a todas las rutas
-router.use((req, res, next) => {
-  verificarToken(req, res, () => {
-    soloAdmin(req, res, next);
-  });
-});
+// Aplicar los middlewares en secuencia
+router.use(verificarToken);  // Primero verifica el token y establece req.user
+router.use(soloAdmin);      // Luego verifica si es admin usando req.user
 
 // Ruta para obtener todas las estadísticas en una sola llamada
 router.get('/', estadisticasController.getTodasLasEstadisticas);
