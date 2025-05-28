@@ -13,7 +13,7 @@ const {
 // GET pedidos del día (más específica → primero)
 router.get('/pedidos-dia', obtenerLosPedidosPorDiaController);
 
-// Rutas CRUD
+// Rutas CRUD básicas
 router.get('/', obtenerTodosLosPedidosController);
 router.get('/:id', obtenerPedidoPorIdController);
 router.post('/', crearPedidoController);
