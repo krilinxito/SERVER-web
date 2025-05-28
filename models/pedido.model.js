@@ -23,9 +23,23 @@ const obtenerTodosLosPedidos = async () => {
   }
 };
 
+// Obtener pedidos del día actual
 const obtenerLosPedidosPorDia = async () => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM pedidos WHERE DATE(fecha) = CURDATE()');
+    const [rows] = await pool.execute(
+      `SELECT 
+        p.id,
+        p.nombre,
+        p.fecha,
+        p.estado,
+        p.id_usuario,
+        u.nombre as nombre_usuario
+       FROM pedidos p
+       LEFT JOIN usuarios u ON p.id_usuario = u.id
+       WHERE DATE(p.fecha) = CURDATE()
+       AND p.estado = 'pendiente'
+       ORDER BY p.fecha DESC`
+    );
     
     // Validación: si no hay pedidos, retornar un array vacío
     if (rows.length === 0) {
@@ -35,10 +49,10 @@ const obtenerLosPedidosPorDia = async () => {
 
     return rows;
   } catch (error) {
+    console.error('Error al obtener pedidos del día:', error);
     throw error;
   }
 };
-
 
 // Obtener pedido por ID
 const obtenerPedidoPorId = async (id) => {
@@ -81,6 +95,6 @@ module.exports = {
   obtenerTodosLosPedidos,
   obtenerPedidoPorId,
   actualizarPedido,
-  eliminarPedido, 
-  obtenerLosPedidosPorDia   
+  eliminarPedido,
+  obtenerLosPedidosPorDia
 };
