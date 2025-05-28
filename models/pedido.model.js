@@ -4,11 +4,29 @@ const pool = require('../config/db');
 const crearPedido = async (nombre, id_usuario) => {
   try {
     const [result] = await pool.execute(
-      'INSERT INTO pedidos (nombre, id_usuario) VALUES (?, ?)',
+      'INSERT INTO pedidos (nombre, id_usuario, estado) VALUES (?, ?, "pendiente")',
       [nombre, id_usuario]
     );
-    return { id: result.insertId, nombre, id_usuario };
+    
+    // Obtener el pedido recién creado
+    const [pedido] = await pool.execute(
+      `SELECT 
+        p.id, 
+        p.nombre, 
+        p.fecha, 
+        p.estado,
+        p.id_usuario,
+        u.nombre as nombre_usuario
+       FROM pedidos p
+       LEFT JOIN usuarios u ON p.id_usuario = u.id
+       WHERE p.id = ?`,
+      [result.insertId]
+    );
+
+    console.log('Pedido creado en la BD:', pedido[0]);
+    return pedido[0];
   } catch (error) {
+    console.error('Error en crearPedido:', error);
     throw error;
   }
 };
@@ -26,26 +44,24 @@ const obtenerTodosLosPedidos = async () => {
 // Obtener pedidos del día actual
 const obtenerLosPedidosPorDia = async () => {
   try {
-    const [rows] = await pool.execute(
-      `SELECT 
+    const query = `
+      SELECT 
         p.id,
         p.nombre,
         p.fecha,
         p.estado,
         p.id_usuario,
         u.nombre as nombre_usuario
-       FROM pedidos p
-       LEFT JOIN usuarios u ON p.id_usuario = u.id
-       WHERE DATE(p.fecha) = CURDATE()
-       AND p.estado = 'pendiente'
-       ORDER BY p.fecha DESC`
-    );
-    
-    // Validación: si no hay pedidos, retornar un array vacío
-    if (rows.length === 0) {
-      console.log('No hay pedidos registrados para el día de hoy.');
-      return [];
-    }
+      FROM pedidos p
+      LEFT JOIN usuarios u ON p.id_usuario = u.id
+      WHERE DATE(p.fecha) = CURDATE()
+      AND p.estado = 'pendiente'
+      ORDER BY p.fecha DESC
+    `;
+
+    console.log('Ejecutando query:', query);
+    const [rows] = await pool.execute(query);
+    console.log('Resultados de la query:', rows);
 
     return rows;
   } catch (error) {

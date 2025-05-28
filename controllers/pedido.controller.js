@@ -27,9 +27,10 @@ const crearPedidoController = async (req, res) => {
 
   try {
     const pedido = await crearPedido(nombre, id_usuario);
-    res.status(201).json({ message: 'Pedido creado', pedido });
+    console.log('Pedido creado:', pedido);
+    res.status(201).json({ data: pedido });
   } catch (error) {
-    console.error(error);
+    console.error('Error al crear el pedido:', error);
     res.status(500).json({ error: 'Error al crear el pedido' });
   }
 };
@@ -49,38 +50,14 @@ const obtenerTodosLosPedidosController = async (req, res) => {
 const obtenerLosPedidosPorDiaController = async (req, res) => {
   try {
     const pedidosBase = await obtenerLosPedidosPorDia();
+    console.log('Pedidos del día obtenidos:', pedidosBase);
     
-    // Si no hay pedidos, retornar array vacío
     if (!pedidosBase || pedidosBase.length === 0) {
+      console.log('No hay pedidos para el día actual');
       return res.json({ data: [] });
     }
 
-    // Para cada pedido, obtener sus totales
-    const pedidosConTotales = await Promise.all(
-      pedidosBase.map(async (pedido) => {
-        try {
-          const [totalPedido, totalPagado] = await Promise.all([
-            calcularTotalPedido(pedido.id),
-            calcularTotalPagado(pedido.id)
-          ]);
-
-          return {
-            ...pedido,
-            total: safeNumber(totalPedido),
-            pagado: safeNumber(totalPagado)
-          };
-        } catch (error) {
-          console.error(`Error calculando totales para pedido ${pedido.id}:`, error);
-          return {
-            ...pedido,
-            total: 0,
-            pagado: 0
-          };
-        }
-      })
-    );
-
-    res.json({ data: pedidosConTotales });
+    res.json({ data: pedidosBase });
   } catch (error) {
     console.error('Error al obtener los pedidos del día:', error);
     res.status(500).json({ error: 'Error al obtener los pedidos del día' });
