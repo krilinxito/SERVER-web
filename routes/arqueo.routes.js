@@ -5,7 +5,7 @@ const {
   obtenerArqueosPorFechaController,
   obtenerUltimoArqueoController
 } = require('../controllers/arqueo.controller');
-const { verificarToken } = require('../middlewares/auth'); // Asumiendo que tienes este middleware
+const { verificarToken } = require('../middlewares/auth.middleware'); // Asumiendo que tienes este middleware
 
 // Todas las rutas requieren autenticación
 router.use(verificarToken);
