@@ -176,15 +176,15 @@ const getIngresosHistoricos = async (pagina, limite) => {
     const offset = (pagina - 1) * limite;
     const [rows] = await pool.query(`
       SELECT 
-        DATE(pedidos.fecha) AS fecha,
+        DATE(CONVERT_TZ(pedidos.fecha, 'UTC', 'America/La_Paz')) AS fecha,
         COALESCE(SUM(pagos.monto), 0) AS total,
         COUNT(DISTINCT pedidos.id) AS total_pedidos
       FROM pedidos
       LEFT JOIN pagos ON pagos.id_pedido = pedidos.id
-      GROUP BY DATE(pedidos.fecha)
+      GROUP BY DATE(CONVERT_TZ(pedidos.fecha, 'UTC', 'America/La_Paz'))
       ORDER BY fecha DESC
       LIMIT ? OFFSET ?
-    `, [limite, offset]);
+    `, [parseInt(limite), parseInt(offset)]);
     return rows;
   } catch (error) {
     console.error('Error en getIngresosHistoricos:', error);
@@ -192,19 +192,16 @@ const getIngresosHistoricos = async (pagina, limite) => {
   }
 };
 
-// Obtener total de registros de ingresos históricos
 const getTotalIngresosHistoricos = async () => {
   try {
     const [rows] = await pool.query(`
       SELECT 
-  DATE(CONVERT_TZ(pedidos.fecha, 'UTC', 'America/La_Paz')) AS fecha,
-  COALESCE(SUM(pagos.monto), 0) AS total,
-  COUNT(DISTINCT pedidos.id) AS total_pedidos
-FROM pedidos
-LEFT JOIN pagos ON pagos.id_pedido = pedidos.id
-GROUP BY DATE(CONVERT_TZ(pedidos.fecha, 'UTC', 'America/La_Paz'))
-ORDER BY fecha DESC
-LIMIT ? OFFSET ?
+        COUNT(*) as total
+      FROM (
+        SELECT DATE(CONVERT_TZ(pedidos.fecha, 'UTC', 'America/La_Paz')) AS fecha
+        FROM pedidos
+        GROUP BY DATE(CONVERT_TZ(pedidos.fecha, 'UTC', 'America/La_Paz'))
+      ) AS subquery
     `);
     return rows[0].total;
   } catch (error) {
@@ -212,7 +209,6 @@ LIMIT ? OFFSET ?
     throw error;
   }
 };
-
 
 module.exports = {
   getIngresosSemanales,
@@ -225,4 +221,5 @@ module.exports = {
   getIngresosHistoricos,
   getTotalIngresosHistoricos
 };
+
 
