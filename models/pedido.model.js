@@ -55,7 +55,6 @@ const obtenerLosPedidosPorDia = async () => {
       FROM pedidos p
       LEFT JOIN usuarios u ON p.id_usuario = u.id
       WHERE DATE(p.fecha) = CURDATE()
-      AND p.estado = 'pendiente'
       ORDER BY p.fecha DESC
     `;
 
