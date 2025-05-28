@@ -9,6 +9,7 @@ const contieneRoutes = require('./routes/contiene.routes');
 const pagosRoutes = require('./routes/pagos.routes');
 const cajaRoutes = require('./routes/caja.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const arqueoRoutes = require('./routes/arqueo.routes');
 const cors = require('cors');
 const corsOptions = {
   origin: ['http://localhost:5173'], // aquí puedes agregar otros orígenes válidos si los necesitas
@@ -30,6 +31,7 @@ app.use('/contiene', contieneRoutes);
 app.use('/pagos', pagosRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/caja', cajaRoutes);
+app.use('/arqueos', arqueoRoutes);
 async function testDbConnection() {
   try {
     const [rows] = await pool.query('SELECT 1');
