@@ -34,7 +34,7 @@ const obtenerArqueosPorFecha = async (fecha) => {
         u.nombre as nombre_usuario
       FROM arqueos_caja a
       LEFT JOIN usuarios u ON a.id_usuario = u.id
-      WHERE DATE(CONVERT_TZ(a.fecha, 'UTC', 'America/La_Paz')) = DATE(?)
+      WHERE DATE(CONVERT_TZ(a.fecha, 'UTC', 'America/La_Paz')) = DATE(CONVERT_TZ(?, 'UTC', 'America/La_Paz'))
       ORDER BY a.fecha DESC`,
       [fecha]
     );

@@ -115,14 +115,13 @@ const obtenerLosPedidosPorDia = async () => {
         u.nombre as nombre_usuario
       FROM pedidos p
       LEFT JOIN usuarios u ON p.id_usuario = u.id
-      WHERE DAY(p.fecha) = DAY(CURDATE()) 
-        AND MONTH(p.fecha) = MONTH(CURDATE())
+      WHERE DATE(CONVERT_TZ(fecha, '+00:00', '-03:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '-03:00'))
       ORDER BY p.fecha DESC
     `;
 
     console.log('Ejecutando query:', query);
     const [rows] = await pool.execute(query);
-    console.log('Resultados de la query:', rows);
+    console.log('Resultados encontrados:', rows.length);
 
     return rows;
   } catch (error) {

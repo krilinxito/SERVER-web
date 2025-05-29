@@ -9,7 +9,7 @@ const obtenerResumenDeCaja = async () => {
         COALESCE(SUM(monto), 0) AS total_por_metodo,
         COUNT(*) as cantidad_pagos
       FROM pagos p
-      WHERE DATE(p.hora - INTERVAL 4 HOUR) = DATE(NOW() - INTERVAL 4 HOUR)
+      WHERE DATE(CONVERT_TZ(p.hora, 'UTC', 'America/La_Paz')) = DATE(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'))
       GROUP BY metodo
     `);
 
@@ -19,7 +19,7 @@ const obtenerResumenDeCaja = async () => {
         COALESCE(SUM(monto), 0) AS total_general,
         COUNT(DISTINCT id_pedido) as total_pedidos
       FROM pagos
-      WHERE DATE(hora - INTERVAL 4 HOUR) = DATE(NOW() - INTERVAL 4 HOUR)
+      WHERE DATE(CONVERT_TZ(hora, 'UTC', 'America/La_Paz')) = DATE(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'))
     `);
 
     // Obtenemos los pagos detallados del día
@@ -36,7 +36,7 @@ const obtenerResumenDeCaja = async () => {
       FROM pagos p
       LEFT JOIN pedidos ped ON p.id_pedido = ped.id
       LEFT JOIN usuarios u ON ped.id_usuario = u.id
-      WHERE DATE(p.hora - INTERVAL 4 HOUR) = DATE(NOW() - INTERVAL 4 HOUR)
+      WHERE DATE(CONVERT_TZ(p.hora, 'UTC', 'America/La_Paz')) = DATE(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'))
       ORDER BY p.hora DESC
     `);
 
@@ -81,7 +81,7 @@ const obtenerResumenPorFecha = async (fecha) => {
         COALESCE(SUM(monto), 0) AS total_por_metodo,
         COUNT(*) as cantidad_pagos
       FROM pagos p
-      WHERE DATE(p.hora - INTERVAL 4 HOUR) = ?
+      WHERE DATE(CONVERT_TZ(p.hora, 'UTC', 'America/La_Paz')) = ?
       GROUP BY metodo
     `, [fechaFormateada]);
 
@@ -91,7 +91,7 @@ const obtenerResumenPorFecha = async (fecha) => {
         COALESCE(SUM(monto), 0) AS total_general,
         COUNT(DISTINCT id_pedido) as total_pedidos
       FROM pagos
-      WHERE DATE(hora - INTERVAL 4 HOUR) = ?
+      WHERE DATE(CONVERT_TZ(hora, 'UTC', 'America/La_Paz')) = ?
     `, [fechaFormateada]);
 
     // Obtenemos los pagos detallados de la fecha
@@ -108,7 +108,7 @@ const obtenerResumenPorFecha = async (fecha) => {
       FROM pagos p
       LEFT JOIN pedidos ped ON p.id_pedido = ped.id
       LEFT JOIN usuarios u ON ped.id_usuario = u.id
-      WHERE DATE(p.hora - INTERVAL 4 HOUR) = ?
+      WHERE DATE(CONVERT_TZ(p.hora, 'UTC', 'America/La_Paz')) = ?
       ORDER BY p.hora DESC
     `, [fechaFormateada]);
 
