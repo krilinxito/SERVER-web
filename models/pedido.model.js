@@ -115,7 +115,8 @@ const obtenerLosPedidosPorDia = async () => {
         u.nombre as nombre_usuario
       FROM pedidos p
       LEFT JOIN usuarios u ON p.id_usuario = u.id
-      WHERE DATE(p.fecha) = CURDATE()
+      WHERE DAY(p.fecha) = DAY(CURDATE()) 
+        AND MONTH(p.fecha) = MONTH(CURDATE())
       ORDER BY p.fecha DESC
     `;
 

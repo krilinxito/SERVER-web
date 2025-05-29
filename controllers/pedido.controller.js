@@ -75,7 +75,7 @@ const obtenerLosPedidosPorDiaController = async (req, res) => {
     
     if (!pedidosBase || pedidosBase.length === 0) {
       console.log('No hay pedidos para el día actual');
-      return res.json({ data: [] });
+      return res.json({ data: pedidosBase });
     }
 
     res.json({ data: pedidosBase });
