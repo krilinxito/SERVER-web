@@ -21,6 +21,22 @@ function validarFuerzaPassword(password) {
 
 // Verificar token CAPTCHA con Google
 async function verificarCaptcha(token) {
+  // Si no hay RECAPTCHA_SECRET_KEY, omitimos la verificación
+  if (!RECAPTCHA_SECRET_KEY) {
+    console.warn('RECAPTCHA_SECRET_KEY no está configurada, omitiendo verificación');
+    return true;
+  }
+
+  // Si no hay token y no hay clave secreta, permitimos el acceso
+  if (!token && !RECAPTCHA_SECRET_KEY) {
+    return true;
+  }
+
+  // Si hay clave secreta pero no hay token, rechazamos
+  if (!token && RECAPTCHA_SECRET_KEY) {
+    return false;
+  }
+
   const url = `https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHA_SECRET_KEY}&response=${token}`;
 
   try {
@@ -28,34 +44,35 @@ async function verificarCaptcha(token) {
     return response.data.success;
   } catch (error) {
     console.error('Error verificando CAPTCHA:', error);
-    return false;
+    // Si hay error de verificación y no es crítico para el ambiente, permitimos el acceso
+    return !RECAPTCHA_SECRET_KEY;
   }
 }
 
 async function register(req, res) {
   const { nombre, email, password, captchaToken } = req.body;
 
-  // Verificar CAPTCHA
-  const captchaValido = await verificarCaptcha(captchaToken);
-  if (!captchaValido) {
-    return res.status(400).json({ error: 'CAPTCHA inválido' });
-  }
-
-  const fuerza = validarFuerzaPassword(password);
-  if (fuerza === 'débil') {
-    return res.status(400).json({ error: 'La contraseña es demasiado débil.' });
-  }
-
-  const existingUser = await getUserByEmail(email);
-  if (existingUser) {
-    return res.status(400).json({ error: 'El email ya está registrado.' });
-  }
-
   try {
+    // Verificar CAPTCHA
+    const captchaValido = await verificarCaptcha(captchaToken);
+    if (!captchaValido) {
+      return res.status(400).json({ error: 'CAPTCHA inválido' });
+    }
+
+    const fuerza = validarFuerzaPassword(password);
+    if (fuerza === 'débil') {
+      return res.status(400).json({ error: 'La contraseña es demasiado débil.' });
+    }
+
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'El email ya está registrado.' });
+    }
+
     const userId = await createUser({ nombre, email, password });
     res.status(201).json({ message: 'Usuario creado correctamente', userId });
   } catch (error) {
-    console.error(error);
+    console.error('Error en register:', error);
     res.status(500).json({ error: 'Error al crear usuario' });
   }
 }
@@ -63,39 +80,58 @@ async function register(req, res) {
 async function login(req, res) {
   const { email, password, captchaToken } = req.body;
 
-  // Verificar CAPTCHA
-  const captchaValido = await verificarCaptcha(captchaToken);
-  if (!captchaValido) {
-    return res.status(400).json({ error: 'CAPTCHA inválido' });
+  try {
+    // Verificar CAPTCHA
+    const captchaValido = await verificarCaptcha(captchaToken);
+    if (!captchaValido) {
+      return res.status(400).json({ error: 'CAPTCHA inválido' });
+    }
+
+    // Verificar que existe el usuario
+    const user = await getUserByEmail(email);
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
+
+    // Verificar contraseña
+    const validPass = await validatePassword(password, user.password_hash);
+    if (!validPass) {
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
+
+    // Verificar que existe JWT_SECRET
+    if (!JWT_SECRET) {
+      console.error('JWT_SECRET no está configurado');
+      return res.status(500).json({ error: 'Error de configuración del servidor' });
+    }
+
+    // Generar token
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email,
+        nombre: user.nombre,
+        rol: user.rol 
+      }, 
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Enviar respuesta exitosa
+    return res.json({ 
+      message: 'Login exitoso',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        nombre: user.nombre,
+        rol: user.rol
+      }
+    });
+  } catch (error) {
+    console.error('Error en login:', error);
+    return res.status(500).json({ error: 'Error en el servidor' });
   }
-
-  const user = await getUserByEmail(email);
-  if (!user) {
-    return res.status(401).json({ error: 'Credenciales incorrectas' });
-  }
-
-  const validPass = await validatePassword(password, user.password_hash);
-  if (!validPass) {
-    return res.status(401).json({ error: 'Credenciales incorrectas' });
-  }
-
-   const token = jwt.sign(
-    { 
-      id: user.id, 
-      email: user.email, 
-      rol: user.rol 
-    }, 
-    JWT_SECRET,
-    { expiresIn: '1h' }
-  );
-
-  // Asegurar que la respuesta incluya el token correctamente
-  res.json({ 
-    message: 'Login exitoso', 
-    token: token  // ← Clave "token" en la respuesta
-  });
-
-  res.json({ message: 'Login exitoso', token });
 }
 
 
