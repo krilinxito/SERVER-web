@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db'); 
+const UserLog = require('../models/userLog.model');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 async function verificarToken(req, res, next) {
@@ -23,6 +24,12 @@ async function verificarToken(req, res, next) {
     
     // Asignar usuario completo a req.user
     req.user = rows[0];
+
+    // Registrar el log de conexión
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    await UserLog.create(req.user.id, userAgent, ipAddress);
+
     next();
   } catch (error) {
     console.error('Error verificando token:', error);
