@@ -32,6 +32,7 @@ app.use('/pagos', pagosRoutes);
 app.use('/estadisticas', estadisticasRoutes);
 app.use('/caja', cajaRoutes);
 app.use('/arqueos', arqueoRoutes);
+app.use('/api/logs', require('./routes/userLog.routes'));
 async function testDbConnection() {
   try {
     const [rows] = await pool.query('SELECT 1');
