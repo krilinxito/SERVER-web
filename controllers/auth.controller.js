@@ -1,6 +1,7 @@
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { getUserByEmail, createUser, validatePassword } = require('../models/user.model');
+const UserLog = require('../models/userLog.model');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
@@ -116,6 +117,11 @@ async function login(req, res) {
       JWT_SECRET,
       { expiresIn: '1h' }
     );
+
+    // Registrar el log de inicio de sesión
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    await UserLog.create(user.id, userAgent, ipAddress);
 
     // Enviar respuesta exitosa
     return res.json({ 
