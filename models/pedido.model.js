@@ -115,7 +115,7 @@ const obtenerLosPedidosPorDia = async () => {
         u.nombre as nombre_usuario
       FROM pedidos p
       LEFT JOIN usuarios u ON p.id_usuario = u.id
-      WHERE DATE(CONVERT_TZ(fecha, '+00:00', '-03:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '-03:00'))
+      WHERE DATE(CONVERT_TZ(fecha, '+00:00', '-04:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '-04:00'))
       ORDER BY p.fecha DESC
     `;
 
