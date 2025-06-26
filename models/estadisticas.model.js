@@ -1,18 +1,22 @@
 const pool = require('../config/db');
 
+// Helper to get the correct timezone for queries
+const TZ = 'America/La_Paz';
+
 const getIngresosSemanales = async () => {
   try {
-    const [rows] = await pool.query(`
+    const query = `
       SELECT 
-        DATE(CONVERT_TZ(p.fecha, 'UTC', 'America/La_Paz')) as fecha,
+        DATE(CONVERT_TZ(p.fecha, 'UTC', ?)) as fecha,
         COUNT(DISTINCT p.id) as total_pedidos,
         COALESCE(SUM(pg.monto), 0) as total
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
-      WHERE CONVERT_TZ(p.fecha, 'UTC', 'America/La_Paz') >= DATE_SUB(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'), INTERVAL 7 DAY)
-      GROUP BY DATE(CONVERT_TZ(p.fecha, 'UTC', 'America/La_Paz'))
+      WHERE YEARWEEK(CONVERT_TZ(p.fecha, 'UTC', ?), 1) = YEARWEEK(CONVERT_TZ(NOW(), 'UTC', ?), 1)
+      GROUP BY DATE(CONVERT_TZ(p.fecha, 'UTC', ?))
       ORDER BY fecha
-    `);
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ, TZ, TZ]);
     return rows;
   } catch (error) {
     console.error('Error en getIngresosSemanales:', error);
@@ -22,16 +26,17 @@ const getIngresosSemanales = async () => {
 
 const getIngresosPorMetodo = async () => {
   try {
-    const [rows] = await pool.query(`
+    const query = `
       SELECT 
         pg.metodo,
         COUNT(*) as cantidad,
         SUM(pg.monto) as total
       FROM pagos pg
       JOIN pedidos p ON pg.id_pedido = p.id
-      WHERE CONVERT_TZ(p.fecha, 'UTC', 'America/La_Paz') >= DATE_SUB(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'), INTERVAL 7 DAY)
+      WHERE YEARWEEK(CONVERT_TZ(p.fecha, 'UTC', ?), 1) = YEARWEEK(CONVERT_TZ(NOW(), 'UTC', ?), 1)
       GROUP BY pg.metodo
-    `);
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ]);
     return rows;
   } catch (error) {
     console.error('Error en getIngresosPorMetodo:', error);
@@ -41,7 +46,7 @@ const getIngresosPorMetodo = async () => {
 
 const getProductosMasVendidos = async (limite = 10) => {
   try {
-    const [rows] = await pool.query(`
+    const query = `
       SELECT 
         p.nombre,
         SUM(c.cantidad) as cantidad_total,
@@ -49,13 +54,14 @@ const getProductosMasVendidos = async (limite = 10) => {
       FROM contiene c
       JOIN productos p ON c.id_producto = p.id
       JOIN pedidos pd ON c.id_pedido = pd.id
-      WHERE CONVERT_TZ(pd.fecha, 'UTC', 'America/La_Paz') >= DATE_SUB(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'), INTERVAL 7 DAY)
+      WHERE YEARWEEK(CONVERT_TZ(pd.fecha, 'UTC', ?), 1) = YEARWEEK(CONVERT_TZ(NOW(), 'UTC', ?), 1)
         AND c.anulado = FALSE
       GROUP BY p.id, p.nombre
       HAVING cantidad_total > 0
       ORDER BY cantidad_total DESC
       LIMIT ?
-    `, [limite]);
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ, limite]);
     return rows;
   } catch (error) {
     console.error('Error en getProductosMasVendidos:', error);
@@ -65,18 +71,19 @@ const getProductosMasVendidos = async (limite = 10) => {
 
 const getVentasPorHora = async () => {
   try {
-    const [rows] = await pool.query(`
+    const query = `
       SELECT 
-        HOUR(CONVERT_TZ(p.fecha, 'UTC', 'America/La_Paz')) as hora,
+        HOUR(CONVERT_TZ(p.fecha, 'UTC', ?)) as hora,
         COUNT(DISTINCT p.id) as total_pedidos,
         COALESCE(SUM(pg.monto), 0) as total_ventas
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
-      WHERE CONVERT_TZ(p.fecha, 'UTC', 'America/La_Paz') >= DATE_SUB(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'), INTERVAL 7 DAY)
-      GROUP BY HOUR(CONVERT_TZ(p.fecha, 'UTC', 'America/La_Paz'))
+      WHERE YEARWEEK(CONVERT_TZ(p.fecha, 'UTC', ?), 1) = YEARWEEK(CONVERT_TZ(NOW(), 'UTC', ?), 1)
+      GROUP BY HOUR(CONVERT_TZ(p.fecha, 'UTC', ?))
       HAVING total_pedidos > 0
       ORDER BY hora
-    `);
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ, TZ, TZ]);
     return rows;
   } catch (error) {
     console.error('Error en getVentasPorHora:', error);
@@ -86,7 +93,7 @@ const getVentasPorHora = async () => {
 
 const getProductosCancelados = async () => {
   try {
-    const [rows] = await pool.query(`
+    const query = `
       SELECT 
         p.nombre,
         COUNT(DISTINCT pd.id) as veces_cancelado,
@@ -95,11 +102,12 @@ const getProductosCancelados = async () => {
       FROM pedidos pd
       JOIN contiene c ON pd.id = c.id_pedido
       JOIN productos p ON c.id_producto = p.id
-      WHERE CONVERT_TZ(pd.fecha, 'UTC', 'America/La_Paz') >= DATE_SUB(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'), INTERVAL 7 DAY)
+      WHERE YEARWEEK(CONVERT_TZ(pd.fecha, 'UTC', ?), 1) = YEARWEEK(CONVERT_TZ(NOW(), 'UTC', ?), 1)
         AND (pd.estado = 'cancelado' OR c.anulado = TRUE)
       GROUP BY p.id, p.nombre
       ORDER BY veces_cancelado DESC
-    `);
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ]);
     return rows;
   } catch (error) {
     console.error('Error en getProductosCancelados:', error);
@@ -109,7 +117,7 @@ const getProductosCancelados = async () => {
 
 const getRendimientoUsuarios = async () => {
   try {
-    const [rows] = await pool.query(`
+    const query = `
       SELECT 
         u.nombre as nombre_usuario,
         COUNT(DISTINCT p.id) as total_pedidos,
@@ -118,11 +126,12 @@ const getRendimientoUsuarios = async () => {
       FROM usuarios u
       LEFT JOIN pedidos p ON u.id = p.id_usuario
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
-      WHERE CONVERT_TZ(p.fecha, 'UTC', 'America/La_Paz') >= DATE_SUB(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'), INTERVAL 7 DAY)
+      WHERE YEARWEEK(CONVERT_TZ(p.fecha, 'UTC', ?), 1) = YEARWEEK(CONVERT_TZ(NOW(), 'UTC', ?), 1)
       GROUP BY u.id, u.nombre
       HAVING total_pedidos > 0
       ORDER BY total_ventas DESC
-    `);
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ]);
     return rows;
   } catch (error) {
     console.error('Error en getRendimientoUsuarios:', error);
@@ -133,7 +142,7 @@ const getRendimientoUsuarios = async () => {
 const getComparativaSemanal = async () => {
   try {
     // Semana actual
-    const [semanaActual] = await pool.query(`
+    const queryActual = `
       SELECT 
         'Semana Actual' as periodo,
         COUNT(DISTINCT p.id) as total_pedidos,
@@ -141,11 +150,12 @@ const getComparativaSemanal = async () => {
         COUNT(DISTINCT p.id_usuario) as usuarios_activos
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
-      WHERE CONVERT_TZ(p.fecha, 'UTC', 'America/La_Paz') >= DATE_SUB(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'), INTERVAL 7 DAY)
-    `);
+      WHERE YEARWEEK(CONVERT_TZ(p.fecha, 'UTC', ?), 1) = YEARWEEK(CONVERT_TZ(NOW(), 'UTC', ?), 1)
+    `;
+    const [semanaActual] = await pool.query(queryActual, [TZ, TZ]);
 
     // Semana anterior
-    const [semanaAnterior] = await pool.query(`
+    const queryAnterior = `
       SELECT 
         'Semana Anterior' as periodo,
         COUNT(DISTINCT p.id) as total_pedidos,
@@ -153,10 +163,9 @@ const getComparativaSemanal = async () => {
         COUNT(DISTINCT p.id_usuario) as usuarios_activos
       FROM pedidos p
       LEFT JOIN pagos pg ON p.id = pg.id_pedido
-      WHERE CONVERT_TZ(p.fecha, 'UTC', 'America/La_Paz') BETWEEN 
-        DATE_SUB(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'), INTERVAL 14 DAY) AND 
-        DATE_SUB(CONVERT_TZ(NOW(), 'UTC', 'America/La_Paz'), INTERVAL 7 DAY)
-    `);
+      WHERE YEARWEEK(CONVERT_TZ(p.fecha, 'UTC', ?), 1) = YEARWEEK(DATE_SUB(CONVERT_TZ(NOW(), 'UTC', ?), INTERVAL 1 WEEK), 1)
+    `;
+    const [semanaAnterior] = await pool.query(queryAnterior, [TZ, TZ]);
 
     return [...semanaActual, ...semanaAnterior];
   } catch (error) {
@@ -168,17 +177,18 @@ const getComparativaSemanal = async () => {
 const getIngresosHistoricos = async (pagina, limite) => {
   try {
     const offset = (pagina - 1) * limite;
-    const [rows] = await pool.query(`
+    const query = `
       SELECT 
-        DATE(CONVERT_TZ(pedidos.fecha, 'UTC', 'America/La_Paz')) AS fecha,
+        DATE(CONVERT_TZ(pedidos.fecha, 'UTC', ?)) AS fecha,
         COALESCE(SUM(pagos.monto), 0) AS total,
         COUNT(DISTINCT pedidos.id) AS total_pedidos
       FROM pedidos
       LEFT JOIN pagos ON pagos.id_pedido = pedidos.id
-      GROUP BY DATE(CONVERT_TZ(pedidos.fecha, 'UTC', 'America/La_Paz'))
+      GROUP BY DATE(CONVERT_TZ(pedidos.fecha, 'UTC', ?))
       ORDER BY fecha DESC
       LIMIT ? OFFSET ?
-    `, [parseInt(limite), parseInt(offset)]);
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ, parseInt(limite), parseInt(offset)]);
     return rows;
   } catch (error) {
     console.error('Error en getIngresosHistoricos:', error);
@@ -188,15 +198,16 @@ const getIngresosHistoricos = async (pagina, limite) => {
 
 const getTotalIngresosHistoricos = async () => {
   try {
-    const [rows] = await pool.query(`
+    const query = `
       SELECT 
         COUNT(*) as total
       FROM (
-        SELECT DATE(CONVERT_TZ(pedidos.fecha, 'UTC', 'America/La_Paz')) AS fecha
+        SELECT DATE(CONVERT_TZ(pedidos.fecha, 'UTC', ?)) AS fecha
         FROM pedidos
-        GROUP BY DATE(CONVERT_TZ(pedidos.fecha, 'UTC', 'America/La_Paz'))
+        GROUP BY DATE(CONVERT_TZ(pedidos.fecha, 'UTC', ?))
       ) AS subquery
-    `);
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ]);
     return rows[0].total;
   } catch (error) {
     console.error('Error en getTotalIngresosHistoricos:', error);
@@ -215,5 +226,3 @@ module.exports = {
   getIngresosHistoricos,
   getTotalIngresosHistoricos
 };
-
-
