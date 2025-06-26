@@ -4,7 +4,7 @@ const pool = require('../config/db');
 const crearPedido = async (nombre, id_usuario) => {
   try {
     const [result] = await pool.execute(
-      'INSERT INTO pedidos (nombre, id_usuario, estado) VALUES (?, ?, "pendiente")',
+      'INSERT INTO pedidos (nombre, id_usuario, estado) VALUES (?, ?, \'pendiente\')',
       [nombre, id_usuario]
     );
     
