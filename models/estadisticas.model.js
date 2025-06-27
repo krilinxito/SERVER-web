@@ -215,6 +215,73 @@ const getTotalIngresosHistoricos = async () => {
   }
 };
 
+const getAnalisisCesta = async (limite = 10) => {
+  try {
+    const query = `
+      SELECT
+        p1.nombre AS producto_A,
+        p2.nombre AS producto_B,
+        COUNT(*) AS frecuencia
+      FROM contiene c1
+      JOIN contiene c2 ON c1.id_pedido = c2.id_pedido AND c1.id_producto < c2.id_producto
+      JOIN productos p1 ON c1.id_producto = p1.id
+      JOIN productos p2 ON c2.id_producto = p2.id
+      JOIN pedidos pd ON c1.id_pedido = pd.id
+      WHERE pd.estado = 'cancelado' -- Significa pagado
+        AND YEARWEEK(CONVERT_TZ(pd.fecha, 'UTC', ?), 1) = YEARWEEK(CONVERT_TZ(NOW(), 'UTC', ?), 1)
+      GROUP BY p1.nombre, p2.nombre
+      ORDER BY frecuencia DESC
+      LIMIT ?;
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ, limite]);
+    return rows;
+  } catch (error) {
+    console.error('Error en getAnalisisCesta:', error);
+    throw error;
+  }
+};
+
+const getTiempoPromedioCierre = async () => {
+  try {
+    const query = `
+      SELECT
+        AVG(TIMESTAMPDIFF(MINUTE, p.fecha, pg.hora)) AS tiempo_promedio_minutos
+      FROM pedidos p
+      JOIN pagos pg ON p.id = pg.id_pedido
+      WHERE p.estado = 'cancelado' -- Significa pagado
+        AND YEARWEEK(CONVERT_TZ(p.fecha, 'UTC', ?), 1) = YEARWEEK(CONVERT_TZ(NOW(), 'UTC', ?), 1);
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ]);
+    return rows[0];
+  } catch (error) {
+    console.error('Error en getTiempoPromedioCierre:', error);
+    throw error;
+  }
+};
+
+const getHorariosPicoIngresos = async () => {
+  try {
+    const query = `
+      SELECT 
+        DAYNAME(CONVERT_TZ(pg.hora, 'UTC', ?)) AS dia_semana,
+        HOUR(CONVERT_TZ(pg.hora, 'UTC', ?)) AS hora,
+        COUNT(DISTINCT pg.id_pedido) as total_pedidos,
+        SUM(pg.monto) AS total_ingresos
+      FROM pagos pg
+      JOIN pedidos p ON pg.id_pedido = p.id
+      WHERE p.estado = 'cancelado' -- Significa pagado
+        AND YEARWEEK(CONVERT_TZ(p.fecha, 'UTC', ?), 1) = YEARWEEK(CONVERT_TZ(NOW(), 'UTC', ?), 1)
+      GROUP BY dia_semana, hora
+      ORDER BY total_ingresos DESC;
+    `;
+    const [rows] = await pool.query(query, [TZ, TZ, TZ]);
+    return rows;
+  } catch (error) {
+    console.error('Error en getHorariosPicoIngresos:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   getIngresosSemanales,
   getIngresosPorMetodo,
@@ -224,5 +291,8 @@ module.exports = {
   getRendimientoUsuarios,
   getComparativaSemanal,
   getIngresosHistoricos,
-  getTotalIngresosHistoricos
+  getTotalIngresosHistoricos,
+  getAnalisisCesta,
+  getTiempoPromedioCierre,
+  getHorariosPicoIngresos
 };
