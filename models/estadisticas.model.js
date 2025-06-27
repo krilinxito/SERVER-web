@@ -274,7 +274,7 @@ const getHorariosPicoIngresos = async () => {
       GROUP BY dia_semana, hora
       ORDER BY total_ingresos DESC;
     `;
-    const [rows] = await pool.query(query, [TZ, TZ, TZ]);
+    const [rows] = await pool.query(query, [TZ, TZ, TZ, TZ]);
     return rows;
   } catch (error) {
     console.error('Error en getHorariosPicoIngresos:', error);
